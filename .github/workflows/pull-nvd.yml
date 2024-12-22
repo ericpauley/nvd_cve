@@ -1,0 +1,35 @@
+name: Pull Updated CVEs
+
+on:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '13 7 * * 1'
+  workflow_dispatch:
+
+jobs:
+  Pull-CVEs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the
+      # added or changed files to the repository.
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go 1.21.x
+        uses: actions/setup-go@v4
+        with:
+          # Semantic version range syntax or exact version of Go
+          go-version: '1.21.x'
+
+      - shell: bash
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: |
+          go run collect.go
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Pull updated CVEs
+          file_pattern: '*.jsonl.zst'
+          commit_options: '--amend --no-edit'
+          push_options: '--force'
